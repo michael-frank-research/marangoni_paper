@@ -1,0 +1,4 @@
+    @/dihedral:OPLSAA/049_048_048_049 @/atom:OPLSAA/*_b*_a*_d049*_i* @/atom:OPLSAA/*_b*_a*_d048*_i* @/atom:OPLSAA/*_b*_a*_d048*_i* @/atom:OPLSAA/*_b*_a*_d049*_i*
+    @/dihedral:OPLSAA/048_048_048_048 @/atom:OPLSAA/*_b*_a*_d048*_i* @/atom:OPLSAA/*_b*_a*_d048*_i* @/atom:OPLSAA/*_b*_a*_d048*_i* @/atom:OPLSAA/*_b*_a*_d048*_i*
+    @/dihedral:OPLSAA/048_048_048_049 @/atom:OPLSAA/*_b*_a*_d048*_i* @/atom:OPLSAA/*_b*_a*_d048*_i* @/atom:OPLSAA/*_b*_a*_d048*_i* @/atom:OPLSAA/*_b*_a*_d049*_i*
+

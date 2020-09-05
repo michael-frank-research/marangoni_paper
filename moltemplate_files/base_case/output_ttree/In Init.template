@@ -1,0 +1,21 @@
+boundary p p f
+units        real
+# explanation:  http://lammps.sandia.gov/doc/units.html
+
+# Specify the attributes of the particles in our system (eg. "full")
+atom_style   full
+# explanation:  http://lammps.sandia.gov/doc/atom_style.html
+
+# Specify the kinds of formulas we want to use to calculate
+# the forces in our system (ie. force-field "styles")
+bond_style   harmonic
+angle_style  harmonic
+dihedral_style  opls
+improper_style harmonic
+pair_style   hybrid lj/cut/tip4p/long @/atom:TIP4P/O  @/atom:TIP4P/H 1 1 0.1546 8.5 lj/cut/coul/long 8.5 8.5 lj/cut 10
+pair_modify  mix geometric
+special_bonds lj/coul 0.0 0.0 0.5
+# explanation:  http://lammps.sandia.gov/doc/pair_modify.html
+kspace_style pppm/tip4p 0.0001
+kspace_modify slab 3.0
+# explanation:  http://lammps.sandia.gov/doc/kspace_style.html

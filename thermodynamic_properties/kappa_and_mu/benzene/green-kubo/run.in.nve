@@ -1,0 +1,102 @@
+include system.in.init
+
+read_data system.data
+
+include system.in.charges
+
+include system.in.settings
+
+
+timestep 1
+thermo 5000
+minimize  1.0e-10  1.0e-7  100000 1000000
+
+dump myDump all atom 5000 init.lammpstrj
+
+group fluid type 2 3 4 5
+
+
+fix fShakeSPCE gtip4p shake 0.0001 100 0 b 1 a 1
+
+fix  fxnpt all npt temp 275.0 275.0 2000.0 iso 1.0 1.0 1000.0 drag 1.0
+reset_timestep 0
+
+
+
+compute        mytemp all temp
+compute        tot_press all pressure mytemp
+
+compute        peratom fluid stress/atom NULL
+compute        p fluid reduce sum c_peratom[1] c_peratom[2] c_peratom[3]
+variable       press equal -(c_p[1]+c_p[2]+c_p[3])/(3*vol)
+
+thermo_style   custom step temp etotal vol press v_press
+run 100000
+reset_timestep 0
+
+undump myDump
+
+write_data temp_grad.data
+unfix fxnpt
+
+fix NVT all nvt temp 275 275 2000
+
+variable    T equal 275
+variable    V equal vol
+variable    dt equal 1
+variable    p equal 5000     # correlation length
+variable    s equal 1      # sample interval
+variable    d equal $p*$s   # dump interval
+
+variable    kB equal 1.3806504e-23    # [J/K] Boltzmann
+variable    kCal2J equal 4186.0/6.02214e23
+variable    atm2Pa equal 101325.0
+variable    A2m equal 1.0e-10
+variable    fs2s equal 1.0e-15
+variable    convert_kappa equal ${kCal2J}*${kCal2J}/${fs2s}/${A2m}
+
+################### KAPPA
+compute      myKE all ke/atom
+compute      myPE all pe/atom
+compute      myStress all stress/atom NULL virial
+compute      flux all heat/flux myKE myPE myStress
+variable     Jx equal c_flux[1]/vol
+variable     Jy equal c_flux[2]/vol
+variable     Jz equal c_flux[3]/vol
+fix          JJ all ave/correlate $s $p $d &
+             c_flux[1] c_flux[2] c_flux[3] type auto file J0Jt.dat ave running overwrite
+variable     scale_kappa equal ${convert_kappa}/${kB}/$T/$T/$V*$s*${dt}
+variable     k11 equal trap(f_JJ[3])*${scale_kappa}
+variable     k22 equal trap(f_JJ[4])*${scale_kappa}
+variable     k33 equal trap(f_JJ[5])*${scale_kappa}
+variable     k equal (v_k11+v_k22+v_k33)/3.0
+
+################### MU
+variable    pv equal 5000     # correlation length
+variable    sv equal 1      # sample interval
+variable    dv equal ${pv}*${sv}   # dump interval
+
+
+variable    convert_mu equal ${atm2Pa}*${atm2Pa}*${fs2s}*${A2m}*${A2m}*${A2m}
+#compute     mytemp all temp
+#compute     mypress all pressure mytemp
+variable     pxy equal pxy
+variable     pxz equal pxz
+variable     pyz equal pyz
+fix          SS all ave/correlate ${sv} ${pv} ${dv} &
+             v_pxy v_pxz v_pyz type auto file S0St.dat ave running overwrite
+variable     scale_mu equal ${convert_mu}/(${kB}*$T)*$V*${sv}*${dt}
+variable     v11 equal trap(f_SS[3])*${scale_mu}
+variable     v22 equal trap(f_SS[4])*${scale_mu}
+variable     v33 equal trap(f_SS[5])*${scale_mu}
+variable     v equal (v_v11+v_v22+v_v33)/3.0
+
+thermo_style custom step temp press v_k v_v
+
+fix 1 all ave/time 1 1 5000 v_k v_v file results.csv
+
+restart 1000000 marangoni.*.restart
+run 1000001
+variable     k equal (v_k11+v_k22+v_k33)/3.0
+variable     ndens equal count(all)/vol
+print        "average conductivity: $k[W/mK] @ $T K, ${ndens} /A^3" 

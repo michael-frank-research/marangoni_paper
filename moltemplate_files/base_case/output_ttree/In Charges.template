@@ -1,0 +1,2 @@
+    set type @/atom:OPLSAA/90_b048_a048_d048_i048 charge -0.115  # "Aromatic C"
+    set type @/atom:OPLSAA/91_b049_a049_d049_i049 charge 0.115  # "Aromatic H-C"

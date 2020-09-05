@@ -1,0 +1,104 @@
+include system.in.init
+
+read_data system.data
+
+include system.in.charges
+
+include system.in.settings
+
+velocity gtip4p zero linear 
+velocity gtip4p zero angular
+velocity gbenzene zero linear 
+velocity gbenzene zero angular
+
+timestep 1
+thermo 1000
+minimize  1.0e-10  1.0e-11  100000 1000000
+
+dump myDump all atom 50000 init.lammpstrj
+
+group fluid type 2 3 4 5
+################### THERMO ###################################
+compute        peratom fluid stress/atom NULL
+compute        p fluid reduce sum c_peratom[1] c_peratom[2] c_peratom[3]
+variable       press equal -(c_p[1]+c_p[2]+c_p[3])/(3*vol)
+
+variable velx equal vcm(gbenzene,x)
+variable vely equal vcm(gbenzene,y)
+variable velz equal vcm(gbenzene,z)
+thermo_style   custom step temp etotal vol press v_press v_velx v_vely v_velz
+#############################################################################
+
+
+fix fShakeSPCE gtip4p shake 0.0001 100 0 b 1 a 1
+fix NVE all nve #temp 300 300 100
+fix fxlan fluid langevin  300.0 300.0  10  23456
+
+run 20000
+#fix frigid gbenzene rigid/nve/small molecule
+unfix NVE
+unfix fxlan
+
+fix NVE all nve# temp 300 300 100
+
+velocity gtip4p zero linear 
+velocity gtip4p zero angular
+velocity gbenzene zero linear 
+velocity gbenzene zero angular
+
+run 200000
+
+reset_timestep 0
+velocity gtip4p zero linear 
+velocity gtip4p zero angular
+velocity gbenzene zero linear 
+velocity gbenzene zero angular
+
+#compute waterTemp gtip4p temp/com
+#fix fwatertemp gtip4p ave/time  1 20000 20000 c_waterTemp file watertemp.csv
+
+#compute myTemp all temp/profile 1 1 1 z 50 out bin
+#fix ftemp all ave/time 1 20000 20000 c_myTemp[1] c_myTemp[2] ave running file temp.csv  mode vector
+
+compute benzenechunkx gbenzene chunk/atom bin/1d z lower 0.02 units reduced
+fix benzeneprofiles gbenzene ave/chunk 1 10000 10000 benzenechunkx temp vx vy density/mass  ave running file benzene.profile
+
+fix fvelb gbenzene ave/time 1 10000 10000 v_velx v_vely v_velz file init_benz.csv
+run 2000000
+undump myDump
+#unfix ftemp
+unfix benzeneprofiles
+unfix fvelb
+
+write_data temp_grad.data
+
+unfix M
+reset_timestep 0
+
+velocity gtip4p zero linear 
+velocity gtip4p zero angular
+velocity gbenzene zero linear 
+velocity gbenzene zero angular
+
+compute msd_drop gtip4p msd
+fix fmsd gtip4p ave/time 1 100000 100000 c_msd_drop[1] c_msd_drop[2] c_msd_drop[3] c_msd_drop[4] file msd.csv
+
+variable drop_velx equal vcm(gtip4p,x)
+variable drop_vely equal vcm(gtip4p,y)
+variable drop_velz equal vcm(gtip4p,z)
+
+
+variable drop_angx equal vcm(gtip4p,x)
+variable drop_angy equal vcm(gtip4p,y)
+variable drop_angz equal vcm(gtip4p,z)
+
+fix fangmom gtip4p ave/time  1 10000 10000 v_drop_angx v_drop_angy v_drop_angz file ang.csv
+fix fvelb gbenzene ave/time 1 10000 10000 v_velx v_vely v_velz file velben.csv
+fix fvel gtip4p ave/time 1 10000 10000 v_drop_velx v_drop_vely v_drop_velz file vel.csv
+
+#compute benzenechunkx2 gbenzene chunk/atom bin/1d z lower 0.02 units reduced
+#fix benzeneprofiles gbenzene ave/chunk 1 50000 50000 benzenechunkx2 temp vx vy density/mass  ave running file benzene.profile
+
+dump myDump all atom 50000 dump.lammpstrj
+restart 1000000 marangoni.*.restart
+run 20000000

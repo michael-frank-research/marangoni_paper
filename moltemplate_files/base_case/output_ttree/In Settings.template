@@ -1,0 +1,100 @@
+    pair_coeff  @/atom:AlCell/Al @/atom:AlCell/Al lj/cut 0.5 3.5
+    group gal type @/atom:AlCell/Al
+    bond_coeff   @/bond:TIP4P/OH           1000  0.9572
+    # explanation:  http://lammps.sandia.gov/doc/bond_harmonic.html
+
+    angle_coeff  @/angle:TIP4P/HOH         1000 104.52
+    # explanation:  http://lammps.sandia.gov/doc/angle_harmonic.html
+ 
+    pair_coeff  @/atom:TIP4P/O @/atom:TIP4P/O lj/cut/tip4p/long    0.1852 3.1589
+    pair_coeff  @/atom:TIP4P/H @/atom:TIP4P/H lj/cut/tip4p/long    0     0
+    pair_coeff  @/atom:TIP4P/O @/atom:TIP4P/H lj/cut/tip4p/long    0     0
+    # explanation:  http://lammps.sandia.gov/doc/pair_charmm.html
+
+    # OPTIONAL: We want the water molecules to behave like rigid objects, so 
+    # we apply the "SHAKE" constraint to the group of atoms in water molecules.
+    # (SHAKE is used to make bonds and angles rigid.)
+
+    group gtip4p type  @/atom:TIP4P/O  @/atom:TIP4P/H
+    # explanation:  http://lammps.sandia.gov/doc/group.html
+
+    #fix fShakeSPCE gtip4p shake 0.0001 10 100 b @bond:OH a @angle:HOH
+    # explanation:  http://lammps.sandia.gov/doc/fix_shake.html
+    # (Remember to "unfix" fSHAKE during minimization.)
+ 
+    pair_coeff @/atom:OPLSAA/90_b048_a048_d048_i048 @/atom:OPLSAA/90_b048_a048_d048_i048 lj/cut/coul/long 0.07 3.55
+    pair_coeff @/atom:OPLSAA/91_b049_a049_d049_i049 @/atom:OPLSAA/91_b049_a049_d049_i049 lj/cut/coul/long 0.03 2.42
+    bond_coeff @/bond:OPLSAA/048_048  469.0 1.4
+    bond_coeff @/bond:OPLSAA/048_049  367.0 1.08
+    angle_coeff @/angle:OPLSAA/048_048_048  63.0 120.0
+    angle_coeff @/angle:OPLSAA/048_048_049  35.0 120.0
+    dihedral_coeff @/dihedral:OPLSAA/049_048_048_049  0.0 7.25 0.0 0.0
+    dihedral_coeff @/dihedral:OPLSAA/048_048_048_048  0.0 7.25 0.0 0.0
+    dihedral_coeff @/dihedral:OPLSAA/048_048_048_049  0.0 7.25 0.0 0.0
+    improper_coeff @/improper:OPLSAA/X_X_048_X  1.1 180.0  # (moltemplate)
+    group gbenzene type  @/atom:OPLSAA/90_b048_a048_d048_i048  @/atom:OPLSAA/91_b049_a049_d049_i049
+  # --- We must eventually specify the interactions between the atoms ---
+  # --- in different molecule types (graphene-water interactions).    ---
+  # (See Laurent Joly, J. Chem. Phys. 135(21):214705 (2011) for details
+
+  pair_coeff @/atom:OPLSAA/90_b048_a048_d048_i048 @/atom:AlCell/Al lj/cut/coul/long 1.19 3.50
+  pair_coeff @/atom:OPLSAA/90_b048_a048_d048_i048 @/atom:TIP4P/O lj/cut/coul/long 0.11 3.34
+  pair_coeff @/atom:OPLSAA/90_b048_a048_d048_i048 @/atom:TIP4P/H lj/cut/coul/long 0 3.28
+
+  pair_coeff @/atom:OPLSAA/91_b049_a049_d049_i049 @/atom:AlCell/Al lj/cut 1.12 2.91
+  pair_coeff @/atom:OPLSAA/91_b049_a049_d049_i049 @/atom:TIP4P/O lj/cut/coul/long 0.07 2.76
+  pair_coeff @/atom:OPLSAA/91_b049_a049_d049_i049 @/atom:TIP4P/H lj/cut/coul/long 0 3.28
+
+
+  pair_coeff @/atom:AlCell/Al @/atom:TIP4P/H lj/cut 0   3.28
+  pair_coeff @/atom:AlCell/Al @/atom:TIP4P/O lj/cut 0.05   3.50
+
+
+############## LEFT WALL ############################
+  region left_wall block INF INF INF INF 0.0 4.1 
+  group tmpleft region left_wall
+  group gleftwall intersect tmpleft gal
+
+
+  region left_wall1 block INF INF INF INF 0.0 1.9
+  group tmpleft1 region left_wall1
+  group gleftwall1 intersect tmpleft1 gal
+
+  region left_wall2 block INF INF INF INF 2.0 4.1 
+  group tmpleft2 region left_wall2
+  group gleftwall2 intersect tmpleft2 gal
+
+############## RIGHT WALL ############################
+
+  region right_wall block INF INF INF INF 220 224.1
+  group tmpright region right_wall
+  group grightwall intersect tmpright gal
+
+  region right_wall1 block INF INF INF INF 220 221.9
+  group tmpright1 region right_wall1
+  group grightwall1 intersect tmpright1 gal
+
+  region right_wall2 block INF INF INF INF 222 225 
+  group tmpright2 region right_wall2
+  group grightwall2 intersect tmpright2 gal
+#####################################################
+
+
+  fix ftetherleft  gleftwall  spring/self 500
+  fix ftetherright  grightwall  spring/self 500
+
+  velocity  all create  300  9834157 mom yes rot yes dist  gaussian
+
+  fix tempinita grightwall1 temp/rescale 1 400 400 0.02 1
+  fix tempinitb grightwall2 temp/rescale 1 400 400 0.02 1
+
+  fix tempinitc gleftwall1 temp/rescale 1 300 300 0.02 1
+  fix tempinitd gleftwall2 temp/rescale 1 300 300 0.02 1
+
+
+  fix tempinit_wat gtip4p temp/rescale 1 310 310 0.02 1
+  fix tempinit_ben gbenzene temp/rescale 1 340 340 0.02 1
+
+  fix M gtip4p momentum 10 linear 1 1 1 angular
+
+  delete_atoms overlap 0.6 gbenzene gtip4p mol yes

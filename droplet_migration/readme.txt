@@ -1,0 +1,6 @@
+Each of the subfolders in this directory corresponds to a run with a different temperature difference across the walls. The main file for each case is run.in.nve. This is the one that you should use as input to your lammps command. 
+
+Notes:
+------
+1. The number of timesteps for each simulation (i.e. "run 20000000" or "run 40000000") is, in most cases, not enough for the droplet to reach the other side of the channel (in fact, for the temperature differences of 50K and 100K this is not even enough for the droplet to start moving). Due to HPC restrictions, we ran each simulation in bursts, using restart files as a means to start subsequent runs. If no such restrictions apply to you, then increase the number of timesteps up to 15000000.
+2. As demonstrated in the paper, different runs result in different results, depending on the initial random configuration of the atoms. To change this initial microstate, simply change the random seed in the velocity command close to the bottom of system.in.settings

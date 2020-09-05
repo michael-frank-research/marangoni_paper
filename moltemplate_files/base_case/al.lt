@@ -1,0 +1,21 @@
+AlCell {
+
+  # AtomID  MolID(IGNORE!) AtomType Charge   X    Y     Z
+
+  write("Data Atoms") {
+    $atom:AlC  $mol:...  @atom:Al    0   0.000 0.000 0.000
+    $atom:AlX  $mol:...  @atom:Al    0   0.000 2.025 2.025
+    $atom:AlY  $mol:...  @atom:Al    0   2.025 0.000 2.025
+    $atom:AlZ  $mol:...  @atom:Al    0   2.025 2.025 0.000
+  }
+
+  write_once("In Settings") {
+    pair_coeff  @atom:Al @atom:Al lj/cut 0.5 3.5
+    group gal type @atom:Al
+  }
+
+  write_once("Data Masses") {
+    @atom:Al 27.0
+  }
+
+}  # AlCell
